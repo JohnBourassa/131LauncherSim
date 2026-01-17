@@ -2,12 +2,12 @@ extends CharacterBody3D
 
 
 const SPEED = 5.0
-const JUMP_VELOCITY = 4.5
+const JUMP_VELOCITY = 0
 
-const BALL = preload("res://ball.tscn")
+const BALL = preload("res://ball.tscn")     
 @onready var ball_spawn: MeshInstance3D = $BallSpawn
 @onready var goal: StaticBody3D = $"../Goal"
-const h1 = 8.5
+const h1 = 10
 const h2 = 1.7
 
 func _shoot():
@@ -15,8 +15,8 @@ func _shoot():
 	get_tree().current_scene.add_child(ballNode)
 	ballNode.global_position = ball_spawn.global_position
 	ballNode.linear_velocity.y = sqrt(19.62 * h1)
-	ballNode.linear_velocity.x = -get_velocity_x()
-	ballNode.linear_velocity.z = -get_velocity_z()
+	ballNode.linear_velocity.x = -get_velocity_x() + velocity.x
+	ballNode.linear_velocity.z = -get_velocity_z() + velocity.z
 	
 func get_displacement_x() -> float:
 	var bot_pos = ball_spawn.global_transform.origin.x
@@ -30,25 +30,36 @@ func get_displacement_z() -> float:
 	var displacement = goal_pos - bot_pos
 	return displacement
 
+func get_flight_time() -> float:
+	var numerator = sqrt(19.62 * h1) + sqrt(19.62 * (h1 - h2))
+	return numerator / 19.62
+
 func get_pitch() -> float:
 	var numerator = h1 * (1 + sqrt(h1 - h2))
 	var denominator = sqrt(pow(get_displacement_x(), 2) + pow(get_displacement_z(), 2))
 	return atan(numerator / denominator)
 
 func get_yaw() -> float:
-	var yaw
-	if atan(get_displacement_x() / get_displacement_z()) > 0:
-		yaw = atan(get_displacement_x() / get_displacement_z())
-	else:
-		yaw = atan(get_displacement_x() / get_displacement_z()) + PI
+	var numerator = (get_displacement_x() / get_flight_time()) - velocity.x
+	var denominator = (get_displacement_z() / get_flight_time()) - velocity.z
+	
+	print(get_displacement_x() / get_flight_time())
+	print(get_displacement_z() / get_flight_time())
+	
+	var yaw = atan(numerator / denominator)
+	if yaw < 0:
+		yaw = yaw + PI
 	return yaw
 	
 func get_launch_velocity() -> float:
 	var numerator = 19.62 * sqrt(pow(get_displacement_x(), 2) + pow(get_displacement_z(), 2))
 	var denominator = sqrt(19.62 * h1) + sqrt(19.62 * (h1 - h2))
-	var b = pow(numerator / denominator, 2)
+	var speedDif = pow(velocity.x, 2) + pow(velocity.z, 2)
+	var b = pow(numerator / denominator, 2) - speedDif
+	print(speedDif)
 	var a = 19.62 * h1
-	return sqrt(a + b)
+	# return sqrt(a + b)
+	return sqrt(a + b) 
 
 func get_velocity_2D() -> float:
 	return cos(get_pitch()) * get_launch_velocity()
@@ -66,10 +77,6 @@ func _physics_process(delta: float) -> void:
 		
 	if Input.is_action_just_pressed("Shoot"):
 		_shoot()
-	
-	print(get_displacement_x())
-	print(get_displacement_z())
-	print(rad_to_deg(get_yaw()))
 	
 	# Handle jump.
 	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
