@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://c1lxo8haj2yba"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_cbx31"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cbx31"]
+albedo_color = Color(1, 1, 0, 1)
+
+[node name="Ball" type="RigidBody3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
+mesh = SubResource("SphereMesh_cbx31")
+surface_material_override/0 = SubResource("StandardMaterial3D_cbx31")
